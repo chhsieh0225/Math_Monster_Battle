@@ -1,4 +1,4 @@
-# 數學寶可夢對戰 PWA
+# Math Monster Battle PWA
 
 ## 檔案說明
 - `index.html` — 主程式（含一般模式＋計時模式）
