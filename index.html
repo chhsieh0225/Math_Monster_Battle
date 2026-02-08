@@ -212,7 +212,7 @@ const POWER_CAPS=[19,23,39,60];
 const HITS_PER_LVL=3;
 const EFX={fire:["🔥","✨","💫"],electric:["⚡","✨","💥"],water:["🌊","💧","✨"],grass:["🍃","🌿","✨"],dark:["💥","⭐","🌟"],enemy:["💢","❗"]};
 
-function genQ(m){const{range,ops}=m;const op=ops[Math.floor(Math.random()*ops.length)];let a,b,ans,d;if(op==="×"){a=Math.floor(Math.random()*(range[1]-range[0]+1))+range[0];b=Math.floor(Math.random()*(range[1]-range[0]+1))+range[0];ans=a*b;d=`${a} × ${b}`;}else if(op==="÷"){b=Math.floor(Math.random()*(range[1]-range[0]+1))+range[0];ans=Math.floor(Math.random()*(range[1]-range[0]+1))+range[0];a=b*ans;d=`${a} ÷ ${b}`;}else if(op==="+"){a=Math.floor(Math.random()*(range[1]-range[0]+1))+range[0];b=Math.floor(Math.random()*(range[1]-range[0]+1))+range[0];ans=a+b;d=`${a} + ${b}`;}else if(op==="-"){a=Math.floor(Math.random()*(range[1]-range[0]+1))+range[0];b=Math.floor(Math.random()*(a+1));ans=a-b;d=`${a} - ${b}`;}const ch=new Set([ans]);while(ch.size<4){const w=ans+Math.floor(Math.random()*10)-5;if(w>0&&w!==ans)ch.add(w);}return{display:d,answer:ans,choices:[...ch].sort(()=>Math.random()-0.5),op};}
+function genQ(m){const{range,ops}=m;const op=ops[Math.floor(Math.random()*ops.length)];let a,b,ans,d;if(op==="×"){a=Math.floor(Math.random()*(range[1]-range[0]+1))+range[0];b=Math.floor(Math.random()*(range[1]-range[0]+1))+range[0];ans=a*b;d=`${a} × ${b}`;}else if(op==="÷"){b=Math.floor(Math.random()*(range[1]-range[0]+1))+range[0];ans=Math.floor(Math.random()*(range[1]-range[0]+1))+range[0];a=b*ans;d=`${a} ÷ ${b}`;}else if(op==="+"){a=Math.floor(Math.random()*(range[1]-range[0]+1))+range[0];b=Math.floor(Math.random()*(range[1]-range[0]+1))+range[0];ans=a+b;d=`${a} + ${b}`;}else if(op==="-"){a=Math.floor(Math.random()*(range[1]-range[0]+1))+range[0];b=Math.floor(Math.random()*(a+1));ans=a-b;d=`${a} - ${b}`;}const spread=Math.max(5,Math.ceil(Math.abs(ans)*0.2));const ch=new Set([ans]);let guard=0;while(ch.size<4&&guard++<50){const w=ans+Math.floor(Math.random()*spread*2+1)-spread;if(w>=0&&w!==ans)ch.add(w);}let fb=1;while(ch.size<4){ch.add(Math.max(0,ans+fb));fb++;}const arr=[...ch];for(let i=arr.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[arr[i],arr[j]]=[arr[j],arr[i]];}return{display:d,answer:ans,choices:arr,op};}
 
 // Leaderboard: localStorage persistence
 const LB_KEY="mathMonsterBattle_lb";const LB_MAX=10;
@@ -307,7 +307,8 @@ function App(){
   const[dmgs,setDmgs]=useState([]);const[parts,setParts]=useState([]);
   const[eAnim,setEAnim]=useState("");const[pAnim,setPAnim]=useState("");const[answered,setAnswered]=useState(false);
   const[atkEffect,setAtkEffect]=useState(null);
-  const[effMsg,setEffMsg]=useState(null); // {text,color} for type effectiveness popup
+  const[effMsg,setEffMsg]=useState(null);
+  const[burnStack,setBurnStack]=useState(0);const[frozen,setFrozen]=useState(false);const frozenR=useRef(false);
   const[lastRank,setLastRank]=useState(-1);const scoreSaved=useRef(false);
   const[playerName,setPlayerName]=useState(()=>{try{return localStorage.getItem("mathMonsterBattle_name")||"";}catch(e){return"";}});
   const[nameSaved,setNameSaved]=useState(false);
@@ -321,11 +322,16 @@ function App(){
   const rmP=id=>setParts(f=>f.filter(v=>v.id!==id));
 
   const SCENE_NAMES={grass:"🌿 綠意草原",fire:"🌋 炎熱火山",ghost:"🌙 幽暗墓地",steel:"⚙️ 鋼鐵要塞",dark:"💀 暗黑深淵"};
-  const startBattle=(idx)=>{const e=enemies[idx];setEnemy(e);setEHp(e.maxHp);setRound(idx);const sn=SCENE_NAMES[e.mType]||"";setPhase("text");setBText(`【${sn}】野生的 ${e.name} Lv.${e.lvl} 出現了！`);setScreen("battle");setEAnim("slideInBattle 0.6s ease");setPAnim("slideInPlayer 0.6s ease");setTimeout(()=>{setEAnim("");setPAnim("");},700);};
+  const startBattle=(idx)=>{const e=enemies[idx];setEnemy(e);setEHp(e.maxHp);setBurnStack(0);setFrozen(false);frozenR.current=false;setRound(idx);const sn=SCENE_NAMES[e.mType]||"";setPhase("text");setBText(`【${sn}】野生的 ${e.name} Lv.${e.lvl} 出現了！`);setScreen("battle");setEAnim("slideInBattle 0.6s ease");setPAnim("slideInPlayer 0.6s ease");safeTo(()=>{setEAnim("");setPAnim("");},700);};
   const quitGame=()=>{clearTimer();setScreen("gameover");};
+  // --- Extracted helpers to eliminate duplication ---
+  const turnRef=useRef(0);
+  const safeTo=(fn,ms)=>{const g=turnRef.current;setTimeout(()=>{if(g===turnRef.current)fn();},ms);};
+  const handleVictory=(verb="被打倒了")=>{setBurnStack(0);setFrozen(false);frozenR.current=false;const xp=enemy.lvl*15;setPExp(prev=>{const ne=prev+xp;if(ne>=expNext){setPLvl(l=>l+1);setPHp(h=>Math.min(h+20,pMax));if(pStg<2&&(pLvl+1)%3===0)safeTo(()=>{setPStg(s=>Math.min(s+1,2));setScreen("evolve");},1500);return ne-expNext;}return ne;});setDefeated(d=>d+1);const drop=enemy.drops[Math.floor(Math.random()*enemy.drops.length)];setBText(`${enemy.name} ${verb}！獲得 ${xp} 經驗值 ${drop}`);setPhase("victory");};
+  const handleFreeze=()=>{frozenR.current=false;setFrozen(false);setBText(`❄️ ${enemy.name} 被凍住了，無法攻擊！`);setPhase("text");safeTo(()=>{setPhase("menu");setBText("");},1500);};
   // Save score when player submits name (arcade-style)
   const handleSaveScore=()=>{if(scoreSaved.current)return;scoreSaved.current=true;const comp=defeated>=enemies.length;const acc=(tC+tW>0)?Math.round(tC/(tC+tW)*100):0;const sc=calcScore(defeated,tC,tW,pLvl,timedMode);const nm=playerName.trim()||"???";try{localStorage.setItem("mathMonsterBattle_name",nm);}catch(e){}const entry={score:sc,name:nm,defeated,correct:tC,wrong:tW,accuracy:acc,level:pLvl,timed:timedMode,completed:comp,date:new Date().toISOString()};const rank=saveScore(entry);setLastRank(rank);setNameSaved(true);};
-  const startGame=(s)=>{clearTimer();scoreSaved.current=false;setLastRank(-1);setNameSaved(false);setPHp(100);setPExp(0);setPLvl(1);setPStg(0);setStreak(0);setCharge(0);setTC(0);setTW(0);setDefeated(0);setMHits([0,0,0,0]);setMLvls([1,1,1,1]);setMLvlUp(null);setDmgs([]);setParts([]);setAtkEffect(null);setEffMsg(null);setScreen("battle");startBattle(0);};
+  const startGame=(s)=>{turnRef.current++;clearTimer();scoreSaved.current=false;setLastRank(-1);setNameSaved(false);setPHp(100);setPExp(0);setPLvl(1);setPStg(0);setStreak(0);setCharge(0);setTC(0);setTW(0);setDefeated(0);setMHits([0,0,0,0]);setMLvls([1,1,1,1]);setMLvlUp(null);setDmgs([]);setParts([]);setAtkEffect(null);setEffMsg(null);setBurnStack(0);setFrozen(false);frozenR.current=false;setScreen("battle");startBattle(0);};
 
   const onTimeoutRef=useRef(null);
   const clearTimer=()=>{if(timerRef.current){clearInterval(timerRef.current);timerRef.current=null;}};
@@ -350,57 +356,68 @@ function App(){
       // Move lvl
       const nh=[...mHits];nh[selIdx]++;
       const cl=mLvls[selIdx];let didLvl=false;
-      if(nh[selIdx]>=HITS_PER_LVL*cl){const np=move.basePower+cl*2;if(np<=POWER_CAPS[selIdx]){const nl=[...mLvls];nl[selIdx]++;setMLvls(nl);didLvl=true;nh[selIdx]=0;setMLvlUp(selIdx);setTimeout(()=>setMLvlUp(null),2000);}}
+      if(nh[selIdx]>=HITS_PER_LVL*cl){const np=move.basePower+cl*2;if(np<=POWER_CAPS[selIdx]){const nl=[...mLvls];nl[selIdx]++;setMLvls(nl);didLvl=true;nh[selIdx]=0;setMLvlUp(selIdx);safeTo(()=>setMLvlUp(null),2000);}}
       setMHits(nh);
-      setTimeout(()=>{
+      safeTo(()=>{
         setPhase("playerAtk");setPAnim("attackLunge 0.6s ease");
         const hitAnims={fire:"enemyFireHit 0.6s ease",electric:"enemyElecHit 0.6s ease",water:"enemyWaterHit 0.7s ease",grass:"enemyGrassHit 0.6s ease",dark:"enemyDarkHit 0.8s ease"};
         const efxDelay={fire:300,electric:200,water:350,grass:280,dark:400};
-        setTimeout(()=>{
+        safeTo(()=>{
           setPAnim("none");
           // Show move effect overlay
           setAtkEffect({type:move.type,idx:selIdx,lvl:mLvls[selIdx]});
-          setTimeout(()=>{
+          safeTo(()=>{
             // Calculate damage with type effectiveness
             let dmg=didLvl?move.basePower+mLvls[selIdx]*2:getPow(selIdx);
             if(ns>=5)dmg=Math.round(dmg*1.8);else if(ns>=3)dmg=Math.round(dmg*1.5);
             dmg=Math.round(dmg*(1+pStg*0.15));
             const eff=getEff(move.type,enemy.mType);
             dmg=Math.round(dmg*eff);
-            if(eff>1){setEffMsg({text:"效果絕佳！",color:"#22c55e"});setTimeout(()=>setEffMsg(null),1500);}
-            else if(eff<1){setEffMsg({text:"效果不好...",color:"#94a3b8"});setTimeout(()=>setEffMsg(null),1500);}
-            const newHp=Math.max(0,eHp-dmg);setEHp(newHp);
+            if(eff>1){setEffMsg({text:"效果絕佳！",color:"#22c55e"});safeTo(()=>setEffMsg(null),1500);}
+            else if(eff<1){setEffMsg({text:"效果不好...",color:"#94a3b8"});safeTo(()=>setEffMsg(null),1500);}
+            let afterHp=Math.max(0,eHp-dmg);
+            // === Type passive effects ===
+            // Fire: accumulate burn, apply DOT inline
+            let newBurn=burnStack;
+            if(starter.type==="fire"&&afterHp>0){newBurn=Math.min(burnStack+1,5);setBurnStack(newBurn);const bd=newBurn*2;afterHp=Math.max(0,afterHp-bd);safeTo(()=>addD(`🔥-${bd}`,155,50,"#f97316"),500);}
+            // Grass: leech heal
+            if(starter.type==="grass"){const heal=Math.round(2+mLvls[selIdx]);setPHp(h=>Math.min(h+heal,pMax));safeTo(()=>addD(`+${heal}`,50,165,"#22c55e"),500);}
+            // Water: freeze chance
+            let willFreeze=false;
+            if(starter.type==="water"&&afterHp>0){const fc=0.25+mLvls[selIdx]*0.03;if(Math.random()<fc){willFreeze=true;setFrozen(true);frozenR.current=true;safeTo(()=>addD("❄️凍結",155,50,"#38bdf8"),600);}}
+            setEHp(afterHp);
             // Move-specific hit animation
             setEAnim(hitAnims[move.type]||"enemyHit 0.5s ease");
             const dmgColor={fire:"#ef4444",electric:"#fbbf24",water:"#3b82f6",grass:"#22c55e",dark:"#a855f7"}[move.type]||"#ef4444";
             addD(`-${dmg}`,140,55,dmgColor);
-            setTimeout(()=>{setEAnim("");setAtkEffect(null);},800);
-            if(newHp<=0){setTimeout(()=>{
-              const xp=enemy.lvl*15;setPExp(prev=>{const ne=prev+xp;if(ne>=expNext){setPLvl(l=>l+1);setPHp(h=>Math.min(h+20,pMax));if(pStg<2&&(pLvl+1)%3===0)setTimeout(()=>{setPStg(s=>Math.min(s+1,2));setScreen("evolve");},1500);return ne-expNext;}return ne;});
-              setDefeated(d=>d+1);const drop=enemy.drops[Math.floor(Math.random()*enemy.drops.length)];
-              setBText(`${enemy.name} 被打倒了！獲得 ${xp} 經驗值 ${drop}`);setPhase("victory");
-            },900);}else setTimeout(()=>enemyTurn(),900);
+            safeTo(()=>{setEAnim("");setAtkEffect(null);},800);
+            if(afterHp<=0){safeTo(()=>handleVictory(),900);}else if(willFreeze){safeTo(()=>handleFreeze(),900);}else safeTo(()=>enemyTurn(),900);
           },efxDelay[move.type]||300);
         },400);
       },600);
     } else {
       setFb({correct:false,answer:q.answer});setTW(w=>w+1);setStreak(0);setCharge(0);
-      setTimeout(()=>{
-        if(move.risky){const sd=Math.round(getPow(selIdx)*0.4);const nh=Math.max(0,pHp-sd);setPHp(nh);setPAnim("playerHit 0.5s ease");addD(`-${sd}`,40,170,"#ef4444");setTimeout(()=>setPAnim("none"),500);setBText(`${move.name} 失控了！自己受到 ${sd} 傷害！`);setPhase("text");setTimeout(()=>{if(nh<=0){setPhase("ko");setBText("你的夥伴倒下了...");setScreen("gameover");}else enemyTurn();},1500);}
-        else{setBText("攻擊落空了！");setPhase("text");setTimeout(()=>enemyTurn(),1200);}
+      safeTo(()=>{
+        if(move.risky){const sd=Math.round(getPow(selIdx)*0.4);const nh=Math.max(0,pHp-sd);setPHp(nh);setPAnim("playerHit 0.5s ease");addD(`-${sd}`,40,170,"#ef4444");safeTo(()=>setPAnim("none"),500);setBText(`${move.name} 失控了！自己受到 ${sd} 傷害！`);setPhase("text");safeTo(()=>{if(nh<=0){setPhase("ko");setBText("你的夥伴倒下了...");setScreen("gameover");}else if(frozenR.current){handleFreeze();}else enemyTurn();},1500);}
+        else{
+          let mt="攻擊落空了！";
+          if(burnStack>0){const bd=burnStack*2;const nh=Math.max(0,eHp-bd);setEHp(nh);addD(`🔥-${bd}`,155,50,"#f97316");mt+=` 灼燒-${bd}！`;if(nh<=0){setBText(mt);setPhase("text");safeTo(()=>handleVictory("被灼燒打倒了"),1200);return;}}
+          setBText(mt);setPhase("text");
+          if(frozenR.current){safeTo(()=>handleFreeze(),1200);}
+          else safeTo(()=>enemyTurn(),1200);}
       },1000);
     }
   };
 
   const enemyTurn=()=>{if(!enemy||!starter)return;setBText(`${enemy.name} 發動攻擊！`);setPhase("enemyAtk");setEAnim("enemyAttackLunge 0.6s ease");
-    setTimeout(()=>{setEAnim("");const dmg=Math.round(enemy.atk*(0.8+Math.random()*0.4));const defEff=getEff(enemy.mType,starter.type);const finalDmg=Math.round(dmg*defEff);const nh=Math.max(0,pHp-finalDmg);setPHp(nh);setPAnim("playerHit 0.5s ease");addD(`-${finalDmg}`,60,170,"#ef4444");addP("enemy",80,190,4);if(defEff>1){setEffMsg({text:"敵人招式很有效！",color:"#ef4444"});setTimeout(()=>setEffMsg(null),1500);}else if(defEff<1){setEffMsg({text:"敵人招式效果不佳",color:"#64748b"});setTimeout(()=>setEffMsg(null),1500);}setTimeout(()=>setPAnim("none"),500);
-    if(nh<=0)setTimeout(()=>{setPhase("ko");setBText("你的夥伴倒下了...");setScreen("gameover");},800);else setTimeout(()=>{setPhase("menu");setBText("");},800);},500);};
+    safeTo(()=>{setEAnim("");const dmg=Math.round(enemy.atk*(0.8+Math.random()*0.4));const defEff=getEff(enemy.mType,starter.type);const finalDmg=Math.round(dmg*defEff);const nh=Math.max(0,pHp-finalDmg);setPHp(nh);setPAnim("playerHit 0.5s ease");addD(`-${finalDmg}`,60,170,"#ef4444");addP("enemy",80,190,4);if(defEff>1){setEffMsg({text:"敵人招式很有效！",color:"#ef4444"});safeTo(()=>setEffMsg(null),1500);}else if(defEff<1){setEffMsg({text:"敵人招式效果不佳",color:"#64748b"});safeTo(()=>setEffMsg(null),1500);}safeTo(()=>setPAnim("none"),500);
+    if(nh<=0)safeTo(()=>{setPhase("ko");setBText("你的夥伴倒下了...");setScreen("gameover");},800);else safeTo(()=>{setPhase("menu");setBText("");},800);},500);};
 
   // Timeout handler for timed mode
   const onTimeout=()=>{
     setAnswered(true);setFb({correct:false,answer:q?.answer});setTW(w=>w+1);setStreak(0);setCharge(0);
     setBText("⏰ 時間到！來不及出招！");setPhase("text");
-    setTimeout(()=>enemyTurn(),1200);
+    safeTo(()=>enemyTurn(),1200);
   };
   // Keep ref updated with latest closure
   useEffect(()=>{onTimeoutRef.current=onTimeout;});
@@ -547,6 +564,10 @@ function App(){
         <div style={{position:"absolute",right:"5%",top:"8%",width:"55%",height:12,background:scene.platform2,borderRadius:"50%",filter:"blur(2px)",transition:"background 0.8s ease",zIndex:3}}/>
         <div style={{position:"absolute",top:10,left:10,right:"42%",zIndex:10}}>
           <HPBar cur={eHp} max={enemy.maxHp} color={enemy.c1} label={`${enemy.typeIcon}${enemy.name} Lv.${enemy.lvl}`}/>
+          <div style={{display:"flex",gap:4,marginTop:3}}>
+            {burnStack>0&&<div style={{background:"rgba(239,68,68,0.85)",color:"white",padding:"1px 7px",borderRadius:8,fontSize:9,fontWeight:700,animation:"popIn 0.3s ease"}}>🔥灼燒 x{burnStack}</div>}
+            {frozen&&<div style={{background:"rgba(56,189,248,0.85)",color:"white",padding:"1px 7px",borderRadius:8,fontSize:9,fontWeight:700,animation:"popIn 0.3s ease"}}>❄️凍結</div>}
+          </div>
         </div>
         <div style={{position:"absolute",right:"10%",top:"12%",zIndex:5,animation:eAnim||(enemy&&enemy.id==="boss"?"bossFloat 2.5s ease-in-out infinite, bossPulse 4s ease infinite":"float 3s ease-in-out infinite")}}><MSVG svgStr={eSvg} size={enemy&&enemy.id==="boss"?190:120}/></div>
         <div style={{position:"absolute",left:"2%",bottom:"12%",width:"50%",height:10,background:scene.platform1,borderRadius:"50%",filter:"blur(2px)",transition:"background 0.8s ease",zIndex:3}}/>
