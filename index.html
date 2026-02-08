@@ -163,6 +163,22 @@ const EFX={fire:["🔥","✨","💫"],electric:["⚡","✨","💥"],water:["🌊
 
 function genQ(m){const{range,ops}=m;const op=ops[Math.floor(Math.random()*ops.length)];let a,b,ans,d;if(op==="×"){a=Math.floor(Math.random()*(range[1]-range[0]+1))+range[0];b=Math.floor(Math.random()*(range[1]-range[0]+1))+range[0];ans=a*b;d=`${a} × ${b}`;}else{b=Math.floor(Math.random()*(range[1]-range[0]+1))+range[0];ans=Math.floor(Math.random()*(range[1]-range[0]+1))+range[0];a=b*ans;d=`${a} ÷ ${b}`;}const ch=new Set([ans]);while(ch.size<4){const w=ans+Math.floor(Math.random()*10)-5;if(w>0&&w!==ans)ch.add(w);}return{display:d,answer:ans,choices:[...ch].sort(()=>Math.random()-0.5),op};}
 
+// Leaderboard: localStorage persistence
+const LB_KEY="mathMonsterBattle_lb";const LB_MAX=10;
+function calcScore(defeated,correct,wrong,level,timed){
+  const acc=(correct+wrong>0)?Math.round(correct/(correct+wrong)*100):0;
+  const raw=defeated*100+acc*50+level*30;
+  return Math.round(raw*(timed?1.5:1));
+}
+function loadScores(){try{return JSON.parse(localStorage.getItem(LB_KEY))||[];}catch(e){return[];}}
+function saveScore(entry){
+  const scores=loadScores();scores.push(entry);
+  scores.sort((a,b)=>b.score-a.score);
+  if(scores.length>LB_MAX)scores.length=LB_MAX;
+  try{localStorage.setItem(LB_KEY,JSON.stringify(scores));}catch(e){}
+  return scores.indexOf(entry);// rank (0-based), -1 if not in top 10
+}
+
 function MSVG({svgStr,size=120,anim="",style={}}){return<svg width={size} height={size*100/120} viewBox="0 0 120 100" style={{...style,animation:anim||"none"}}><defs><radialGradient id="gs" cx="35%" cy="25%"><stop offset="0%" stopColor="white" stopOpacity="0.5"/><stop offset="100%" stopColor="white" stopOpacity="0"/></radialGradient><filter id="glow"><feGaussianBlur stdDeviation="2" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs><g dangerouslySetInnerHTML={{__html:svgStr}}/></svg>;}
 
 function HPBar({cur,max,color,label}){const p=Math.max(0,cur/max*100);const bc=p>50?color:p>25?"#f59e0b":"#ef4444";return<div style={{background:"rgba(0,0,0,0.65)",borderRadius:12,padding:"8px 12px",backdropFilter:"blur(8px)",border:"1px solid rgba(255,255,255,0.1)"}}><div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:4}}><span style={{fontSize:12,fontWeight:800,color:"white"}}>{label}</span><span style={{fontSize:10,color:"rgba(255,255,255,0.5)",fontFamily:"'Press Start 2P',monospace"}}>{Math.max(0,Math.ceil(cur))}/{max}</span></div><div style={{height:8,background:"rgba(255,255,255,0.15)",borderRadius:4,overflow:"hidden"}}><div style={{width:`${p}%`,height:"100%",background:`linear-gradient(90deg,${bc},${bc}cc)`,borderRadius:4,transition:"width 0.6s ease"}}/></div></div>;}
@@ -213,6 +229,7 @@ function App(){
   const[eAnim,setEAnim]=useState("");const[pAnim,setPAnim]=useState("");const[answered,setAnswered]=useState(false);
   const[atkEffect,setAtkEffect]=useState(null);
   const[effMsg,setEffMsg]=useState(null); // {text,color} for type effectiveness popup
+  const[lastRank,setLastRank]=useState(-1);const scoreSaved=useRef(false);
   const did=useRef(0);const pid=useRef(0);
   const expNext=pLvl*30;
   const getPow=(i)=>Math.min(MOVES_BASE[i].basePower+(mLvls[i]-1)*2,POWER_CAPS[i]);
@@ -223,7 +240,9 @@ function App(){
 
   const SCENE_NAMES={grass:"🌿 綠意草原",fire:"🌋 炎熱火山",ghost:"🌙 幽暗墓地",steel:"⚙️ 鋼鐵要塞",dark:"💀 暗黑深淵"};
   const startBattle=(idx)=>{const e=enemies[idx];setEnemy(e);setEHp(e.maxHp);setRound(idx);const sn=SCENE_NAMES[e.mType]||"";setPhase("text");setBText(`【${sn}】野生的 ${e.name} Lv.${e.lvl} 出現了！`);setScreen("battle");setEAnim("slideInBattle 0.6s ease");setPAnim("slideInPlayer 0.6s ease");setTimeout(()=>{setEAnim("");setPAnim("");},700);};
-  const startGame=()=>{clearTimer();setPHp(100);setPExp(0);setPLvl(1);setPStg(0);setStreak(0);setCharge(0);setTC(0);setTW(0);setDefeated(0);setMHits([0,0,0,0]);setMLvls([1,1,1,1]);setMLvlUp(null);setDmgs([]);setParts([]);setAtkEffect(null);setEffMsg(null);startBattle(0);};
+  const doSaveScore=(d,c,w,lv,tm,comp)=>{if(scoreSaved.current)return;scoreSaved.current=true;const acc=(c+w>0)?Math.round(c/(c+w)*100):0;const sc=calcScore(d,c,w,lv,tm);const entry={score:sc,defeated:d,correct:c,wrong:w,accuracy:acc,level:lv,timed:tm,completed:comp,date:new Date().toISOString()};const rank=saveScore(entry);setLastRank(rank);};
+  const quitGame=()=>{clearTimer();doSaveScore(defeated,tC,tW,pLvl,timedMode,false);setScreen("gameover");};
+  const startGame=()=>{clearTimer();scoreSaved.current=false;setLastRank(-1);setPHp(100);setPExp(0);setPLvl(1);setPStg(0);setStreak(0);setCharge(0);setTC(0);setTW(0);setDefeated(0);setMHits([0,0,0,0]);setMLvls([1,1,1,1]);setMLvlUp(null);setDmgs([]);setParts([]);setAtkEffect(null);setEffMsg(null);startBattle(0);};
 
   const onTimeoutRef=useRef(null);
   const clearTimer=()=>{if(timerRef.current){clearInterval(timerRef.current);timerRef.current=null;}};
