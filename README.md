@@ -1,4 +1,6 @@
-# Math Monster Battle PWA
+# Math Monster Battle-PWA
+Created by Chung-Han Hsieh (ch.hsieh@mx.nthu.edu.tw)
+Coded supported by Claude (Anthropic)
 
 ## 檔案說明
 - `index.html` — 主程式（含一般模式＋計時模式）
