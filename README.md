@@ -2,13 +2,13 @@
 Created by Chung-Han Hsieh (ch.hsieh@mx.nthu.edu.tw)
 Coded supported by Claude (Anthropic)
 
-## 檔案說明
+## Description
 - `index.html` — 主程式（含一般模式＋計時模式）
 - `manifest.json` — PWA 設定
 - `sw.js` — Service Worker（離線支援）
 - `icon-192.png` / `icon-512.png` — 應用程式圖標
 
-## 功能
+## Functional
 - ⚔️ 一般模式：不限時間答題
 - ⏱️ 計時模式：5秒限時答題
 - 🔥⚡🌊💥 四種招式搭配不同數學題型
