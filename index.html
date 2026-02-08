@@ -43,6 +43,10 @@ button:active{transform:scale(0.96)!important}
 @keyframes waterDrop{0%{transform:translate(0,0) scale(0);opacity:0}20%{transform:translate(var(--dx),var(--dy)) scale(1);opacity:0.9}100%{transform:translate(var(--dx),calc(var(--dy) + 40px)) scale(0.3);opacity:0}}
 @keyframes darkPulse{0%{transform:scale(0);opacity:0;background:rgba(88,28,135,0.8)}30%{transform:scale(1);opacity:0.9}60%{transform:scale(1.8);opacity:0.5;background:rgba(168,85,247,0.3)}100%{transform:scale(2.5);opacity:0}}
 @keyframes darkScreenFlash{0%{background:transparent}15%{background:rgba(0,0,0,0.7)}30%{background:rgba(88,28,135,0.4)}50%{background:rgba(0,0,0,0.5)}70%{background:rgba(168,85,247,0.2)}100%{background:transparent}}
+@keyframes enemyGrassHit{0%{filter:brightness(1) hue-rotate(0deg);transform:translate(0,0)}15%{filter:brightness(1.8) hue-rotate(60deg);transform:translate(-5px,3px)}30%{filter:brightness(1.2) hue-rotate(30deg);transform:translate(4px,-2px)}50%{filter:brightness(1.5) hue-rotate(50deg);transform:translate(-3px,2px)}70%{filter:brightness(1.2);transform:translate(2px,0)}100%{filter:brightness(1) hue-rotate(0deg);transform:translate(0,0)}}
+@keyframes leafSlash{0%{transform:translate(0,0) rotate(-45deg) scale(0);opacity:0}20%{transform:translate(40px,-20px) rotate(0deg) scale(1.2);opacity:1}70%{transform:translate(140px,-70px) rotate(30deg) scale(1);opacity:0.8}100%{transform:translate(180px,-90px) rotate(45deg) scale(0.3);opacity:0}}
+@keyframes leafBurst{0%{transform:translate(0,0) rotate(0deg) scale(0);opacity:0}15%{transform:scale(1);opacity:0.9}100%{transform:translate(var(--lx),var(--ly)) rotate(var(--lr)) scale(0);opacity:0}}
+@keyframes grassScreenFlash{0%{background:transparent}12%{background:rgba(34,197,94,0.15)}25%{background:transparent}35%{background:rgba(74,222,128,0.1)}50%{background:transparent}100%{background:transparent}}
 @keyframes enemyFireHit{0%{filter:brightness(1)}20%{filter:brightness(2) hue-rotate(-20deg)}40%{filter:brightness(1.3)}60%{filter:brightness(1.8) hue-rotate(-10deg)}100%{filter:brightness(1)}}
 @keyframes enemyElecHit{0%{filter:brightness(1);transform:translate(0,0)}10%{filter:brightness(3);transform:translate(3px,0)}20%{filter:brightness(1.5);transform:translate(-3px,0)}30%{filter:brightness(2.5);transform:translate(2px,0)}40%{filter:brightness(1);transform:translate(-2px,0)}50%{filter:brightness(2);transform:translate(0,0)}100%{filter:brightness(1);transform:translate(0,0)}}
 @keyframes enemyWaterHit{0%{filter:brightness(1);transform:translate(0,0)}20%{filter:brightness(1.5) saturate(2);transform:translate(8px,0)}40%{filter:brightness(1.2);transform:translate(-4px,0)}60%{filter:brightness(1.3) saturate(1.5);transform:translate(2px,0)}100%{filter:brightness(1);transform:translate(0,0)}}
@@ -206,7 +210,7 @@ const STARTERS=[
 ];
 const POWER_CAPS=[19,23,39,60];
 const HITS_PER_LVL=3;
-const EFX={fire:["🔥","✨","💫"],electric:["⚡","✨","💥"],water:["🌊","💧","✨"],dark:["💥","⭐","🌟"],enemy:["💢","❗"]};
+const EFX={fire:["🔥","✨","💫"],electric:["⚡","✨","💥"],water:["🌊","💧","✨"],grass:["🍃","🌿","✨"],dark:["💥","⭐","🌟"],enemy:["💢","❗"]};
 
 function genQ(m){const{range,ops}=m;const op=ops[Math.floor(Math.random()*ops.length)];let a,b,ans,d;if(op==="×"){a=Math.floor(Math.random()*(range[1]-range[0]+1))+range[0];b=Math.floor(Math.random()*(range[1]-range[0]+1))+range[0];ans=a*b;d=`${a} × ${b}`;}else if(op==="÷"){b=Math.floor(Math.random()*(range[1]-range[0]+1))+range[0];ans=Math.floor(Math.random()*(range[1]-range[0]+1))+range[0];a=b*ans;d=`${a} ÷ ${b}`;}else if(op==="+"){a=Math.floor(Math.random()*(range[1]-range[0]+1))+range[0];b=Math.floor(Math.random()*(range[1]-range[0]+1))+range[0];ans=a+b;d=`${a} + ${b}`;}else if(op==="-"){a=Math.floor(Math.random()*(range[1]-range[0]+1))+range[0];b=Math.floor(Math.random()*(a+1));ans=a-b;d=`${a} - ${b}`;}const ch=new Set([ans]);while(ch.size<4){const w=ans+Math.floor(Math.random()*10)-5;if(w>0&&w!==ans)ch.add(w);}return{display:d,answer:ans,choices:[...ch].sort(()=>Math.random()-0.5),op};}
 
@@ -232,28 +236,56 @@ function HPBar({cur,max,color,label}){const p=Math.max(0,cur/max*100);const bc=p
 function XPBar({exp,max}){const p=Math.min(100,exp/max*100);return<div style={{height:4,background:"rgba(255,255,255,0.1)",borderRadius:2,overflow:"hidden",marginTop:4}}><div style={{width:`${p}%`,height:"100%",background:"linear-gradient(90deg,#6366f1,#a855f7)",borderRadius:2,transition:"width 0.8s ease"}}/></div>;}
 function Dmg({value,x,y,color,onDone}){useEffect(()=>{const t=setTimeout(onDone,1000);return()=>clearTimeout(t);},[]);return<div style={{position:"absolute",left:x,top:y,fontSize:24,fontWeight:900,color,textShadow:`0 2px 8px ${color}88`,animation:"dmgPop 1s ease forwards",pointerEvents:"none",zIndex:100,fontFamily:"'Press Start 2P',monospace"}}>{value}</div>;}
 function Part({emoji,x,y,onDone}){const dx=Math.random()*80-40,dy=-(Math.random()*60+20);const[s,setS]=useState({left:x,top:y,opacity:1,transform:"scale(0)"});useEffect(()=>{requestAnimationFrame(()=>setS({left:x+dx,top:y+dy,opacity:0,transform:"scale(1.2)"}));const t=setTimeout(onDone,800);return()=>clearTimeout(t);},[]);return<div style={{position:"absolute",...s,fontSize:18,transition:"all 0.8s ease-out",pointerEvents:"none",zIndex:90}}>{emoji}</div>;}
-function FireEffect({onDone}){useEffect(()=>{const t=setTimeout(onDone,900);return()=>clearTimeout(t);},[]);return<div style={{position:"absolute",inset:0,pointerEvents:"none",zIndex:80}}>
-{[0,1,2].map(i=><div key={i} style={{position:"absolute",left:"15%",bottom:"40%",fontSize:28+i*6,animation:`fireballFly ${0.7+i*0.1}s ease ${i*0.1}s forwards`,opacity:0}}>🔥</div>)}
-{[...Array(6)].map((_,i)=><div key={`t${i}`} style={{position:"absolute",left:`${20+i*8}%`,bottom:`${42-i*5}%`,fontSize:12+Math.random()*8,animation:`fireTrail 0.5s ease ${0.15+i*0.08}s forwards`,opacity:0}}>{"🔥✨💫"[i%3]}</div>)}
-</div>;}
+function FireEffect({idx=0,lvl=1,onDone}){
+  const n=idx===0?1+lvl:idx===1?2+lvl:3+lvl*2;const sz=idx===0?20+lvl*3:idx===1?28+lvl*3:34+lvl*4;const dur=700+idx*100+lvl*30;
+  useEffect(()=>{const t=setTimeout(onDone,dur+200);return()=>clearTimeout(t);},[]);
+  return<div style={{position:"absolute",inset:0,pointerEvents:"none",zIndex:80}}>
+  {/* Tier 0: single fireball / Tier 1: fan of fireballs / Tier 2: explosion barrage */}
+  {Array.from({length:n},(_,i)=><div key={i} style={{position:"absolute",left:`${10+i*4}%`,bottom:`${36+i*3}%`,fontSize:sz+i*4,animation:`fireballFly ${dur/1000+i*0.1}s ease ${i*0.08}s forwards`,opacity:0}}>🔥</div>)}
+  {/* Trail particles — more for higher tier & level */}
+  {[...Array(3+idx*2+lvl)].map((_,i)=><div key={`t${i}`} style={{position:"absolute",left:`${15+i*7}%`,bottom:`${40-i*4}%`,fontSize:10+lvl*2+Math.random()*8,animation:`fireTrail 0.5s ease ${0.1+i*0.06}s forwards`,opacity:0}}>{"🔥✨💫"[i%3]}</div>)}
+  {/* Tier 2 extra: screen heat shimmer */}
+  {idx>=2&&<div style={{position:"absolute",inset:0,background:`radial-gradient(circle at 70% 30%,rgba(239,68,68,${0.1+lvl*0.03}),transparent 60%)`,animation:`darkScreenFlash ${dur/1000}s ease`}}/>}
+  </div>;}
 
-function ElecEffect({onDone}){useEffect(()=>{const t=setTimeout(onDone,800);return()=>clearTimeout(t);},[]);
-const bolt=`M60,0 L55,30 L70,32 L50,65 L62,42 L48,40 L60,0`;
-return<div style={{position:"absolute",inset:0,pointerEvents:"none",zIndex:80,animation:"lightningFlash 0.8s ease"}}>
-{[0,1].map(i=><svg key={i} style={{position:"absolute",right:`${12+i*8}%`,top:`${5+i*3}%`,animation:`lightningStrike 0.5s ease ${i*0.15}s both`}} width="60" height="80" viewBox="0 0 80 70"><path d={bolt} fill={i===0?"#fbbf24":"#fde68a"} opacity={1-i*0.3}/></svg>)}
-{[...Array(5)].map((_,i)=><div key={`s${i}`} style={{position:"absolute",right:`${8+Math.random()*20}%`,top:`${10+Math.random()*30}%`,fontSize:10+Math.random()*10,animation:`sparkle 0.4s ease ${0.1+i*0.1}s both`}}>⚡</div>)}
-</div>;}
+function ElecEffect({idx=0,lvl=1,onDone}){useEffect(()=>{const t=setTimeout(onDone,800+lvl*30);return()=>clearTimeout(t);},[]);
+  const bolt=`M60,0 L55,30 L70,32 L50,65 L62,42 L48,40 L60,0`;const n=1+idx+Math.floor(lvl/2);
+  return<div style={{position:"absolute",inset:0,pointerEvents:"none",zIndex:80,animation:"lightningFlash 0.8s ease"}}>
+  {Array.from({length:n},(_,i)=><svg key={i} style={{position:"absolute",right:`${8+i*10}%`,top:`${3+i*4}%`,animation:`lightningStrike 0.5s ease ${i*0.12}s both`,transform:`scale(${0.8+lvl*0.1})`}} width="60" height="80" viewBox="0 0 80 70"><path d={bolt} fill={i===0?"#fbbf24":"#fde68a"} opacity={1-i*0.2}/></svg>)}
+  {[...Array(3+idx*2+lvl)].map((_,i)=><div key={`s${i}`} style={{position:"absolute",right:`${5+Math.random()*25}%`,top:`${8+Math.random()*30}%`,fontSize:10+lvl*2+Math.random()*10,animation:`sparkle 0.4s ease ${0.08+i*0.08}s both`}}>⚡</div>)}
+  </div>;}
 
-function WaterEffect({onDone}){useEffect(()=>{const t=setTimeout(onDone,1000);return()=>clearTimeout(t);},[]);return<div style={{position:"absolute",inset:0,pointerEvents:"none",zIndex:80,overflow:"hidden"}}>
-<div style={{position:"absolute",right:"5%",top:"10%",width:"60%",height:40,background:"linear-gradient(90deg,transparent,rgba(59,130,246,0.5),rgba(96,165,250,0.6),rgba(59,130,246,0.3),transparent)",borderRadius:20,animation:"waterWave 0.8s ease forwards"}}/>
-<div style={{position:"absolute",right:"5%",top:"18%",width:"50%",height:30,background:"linear-gradient(90deg,transparent,rgba(96,165,250,0.4),rgba(147,197,253,0.5),transparent)",borderRadius:16,animation:"waterWave 0.8s ease 0.1s forwards",opacity:0}}/>
-{[...Array(8)].map((_,i)=><div key={i} style={{position:"absolute",right:`${10+i*5}%`,top:`${8+Math.random()*20}%`,fontSize:10+Math.random()*10,opacity:0,"--dx":`${-20+Math.random()*40}px`,"--dy":`${-10+Math.random()*20}px`,animation:`waterDrop 0.7s ease ${0.2+i*0.06}s forwards`}}>{"💧🌊💦"[i%3]}</div>)}
-</div>;}
+function WaterEffect({idx=0,lvl=1,onDone}){
+  const dur=800+idx*100+lvl*30;const waves=idx===0?1:idx===1?2:3;const drops=3+idx*3+lvl*2;
+  useEffect(()=>{const t=setTimeout(onDone,dur+200);return()=>clearTimeout(t);},[]);
+  return<div style={{position:"absolute",inset:0,pointerEvents:"none",zIndex:80,overflow:"hidden"}}>
+  {/* Tier 0: small bubble stream / Tier 1: wave / Tier 2: tsunami with multiple waves */}
+  {Array.from({length:waves},(_,i)=><div key={`w${i}`} style={{position:"absolute",right:"5%",top:`${8+i*8}%`,width:`${40+idx*10+lvl*3}%`,height:25+idx*8+lvl*3,background:`linear-gradient(90deg,transparent,rgba(59,130,246,${0.3+idx*0.15}),rgba(96,165,250,${0.4+idx*0.1}),transparent)`,borderRadius:20,animation:`waterWave ${dur/1000}s ease ${i*0.12}s forwards`,opacity:0}}/>)}
+  {/* Drops — more and bigger with level */}
+  {[...Array(drops)].map((_,i)=><div key={i} style={{position:"absolute",right:`${8+i*4}%`,top:`${6+Math.random()*25}%`,fontSize:8+idx*4+lvl*2+Math.random()*8,opacity:0,"--dx":`${-20+Math.random()*40}px`,"--dy":`${-10+Math.random()*20}px`,animation:`waterDrop 0.7s ease ${0.15+i*0.05}s forwards`}}>{"💧🌊💦"[i%3]}</div>)}
+  {/* Tier 2 extra: blue screen tint */}
+  {idx>=2&&<div style={{position:"absolute",inset:0,background:`radial-gradient(ellipse at 65% 25%,rgba(59,130,246,${0.12+lvl*0.03}),transparent 65%)`,animation:`darkScreenFlash ${dur/1000}s ease`}}/>}
+  </div>;}
 
-function DarkEffect({onDone}){useEffect(()=>{const t=setTimeout(onDone,1100);return()=>clearTimeout(t);},[]);return<div style={{position:"absolute",inset:0,pointerEvents:"none",zIndex:80,animation:"darkScreenFlash 1s ease"}}>
-{[0,1,2].map(i=><div key={i} style={{position:"absolute",right:"18%",top:"20%",width:60,height:60,borderRadius:"50%",animation:`darkPulse 0.7s ease ${i*0.15}s forwards`}}/>)}
-{[...Array(8)].map((_,i)=><div key={`s${i}`} style={{position:"absolute",right:`${5+Math.random()*30}%`,top:`${5+Math.random()*35}%`,fontSize:14+Math.random()*14,animation:`sparkle 0.5s ease ${0.2+i*0.08}s both`}}>{"💥⭐🌟✨"[i%4]}</div>)}
-</div>;}
+function DarkEffect({idx=0,lvl=1,onDone}){
+  const n=2+lvl;const sz=50+lvl*8;
+  useEffect(()=>{const t=setTimeout(onDone,1100+lvl*30);return()=>clearTimeout(t);},[]);
+  return<div style={{position:"absolute",inset:0,pointerEvents:"none",zIndex:80,animation:"darkScreenFlash 1s ease"}}>
+  {Array.from({length:n},(_,i)=><div key={i} style={{position:"absolute",right:"18%",top:"20%",width:sz,height:sz,borderRadius:"50%",animation:`darkPulse ${0.6+lvl*0.05}s ease ${i*0.12}s forwards`}}/>)}
+  {[...Array(5+lvl*2)].map((_,i)=><div key={`s${i}`} style={{position:"absolute",right:`${3+Math.random()*30}%`,top:`${3+Math.random()*35}%`,fontSize:12+lvl*3+Math.random()*12,animation:`sparkle 0.5s ease ${0.15+i*0.07}s both`}}>{"💥⭐🌟✨"[i%4]}</div>)}
+  </div>;}
+
+function GrassEffect({idx=0,lvl=1,onDone}){
+  const dur=700+idx*100+lvl*30;const slashes=idx===0?1:idx===1?2+lvl:3+lvl;const bursts=2+idx*3+lvl*2;
+  useEffect(()=>{const t=setTimeout(onDone,dur+200);return()=>clearTimeout(t);},[]);
+  return<div style={{position:"absolute",inset:0,pointerEvents:"none",zIndex:80,animation:"grassScreenFlash 0.9s ease"}}>
+  {/* Tier 0: single leaf / Tier 1: vine whip lashes / Tier 2: leaf tornado */}
+  {Array.from({length:slashes},(_,i)=><div key={i} style={{position:"absolute",left:`${8+i*5}%`,bottom:`${34+i*4}%`,fontSize:18+idx*6+lvl*3+i*4,animation:`leafSlash ${dur/1000+i*0.1}s ease ${i*0.07}s forwards`,opacity:0}}>{"🍃🌿🍀"[i%3]}</div>)}
+  {/* Burst particles — more with level */}
+  {[...Array(bursts)].map((_,i)=><div key={`l${i}`} style={{position:"absolute",right:`${8+i*5}%`,top:`${8+Math.random()*25}%`,fontSize:8+idx*3+lvl*2+Math.random()*10,opacity:0,"--lx":`${-30+Math.random()*60}px`,"--ly":`${-20+Math.random()*40}px`,"--lr":`${Math.random()*360}deg`,animation:`leafBurst 0.6s ease ${0.1+i*0.05}s forwards`}}>{"🍃🌿🍀✨"[i%4]}</div>)}
+  {/* Tier 2 extra: green screen tint */}
+  {idx>=2&&<div style={{position:"absolute",inset:0,background:`radial-gradient(circle at 65% 30%,rgba(34,197,94,${0.1+lvl*0.03}),transparent 60%)`,animation:`darkScreenFlash ${dur/1000}s ease`}}/>}
+  </div>;}
 
 function TBox({text,onClick}){return<div onClick={onClick} style={{position:"absolute",bottom:0,left:0,right:0,background:"linear-gradient(to top,rgba(15,23,42,0.98),rgba(15,23,42,0.92))",borderTop:"3px solid rgba(255,255,255,0.15)",padding:"16px 20px",minHeight:70,display:"flex",alignItems:"center",justifyContent:"space-between",cursor:"pointer",zIndex:50}}><div style={{fontSize:15,fontWeight:600,color:"white",lineHeight:1.6,animation:"fadeSlide 0.3s ease"}}>{text}</div><div style={{fontSize:10,color:"rgba(255,255,255,0.3)",flexShrink:0,marginLeft:12}}>▼</div></div>;}
 
@@ -322,12 +354,12 @@ function App(){
       setMHits(nh);
       setTimeout(()=>{
         setPhase("playerAtk");setPAnim("attackLunge 0.6s ease");
-        const hitAnims={fire:"enemyFireHit 0.6s ease",electric:"enemyElecHit 0.6s ease",water:"enemyWaterHit 0.7s ease",dark:"enemyDarkHit 0.8s ease"};
-        const efxDelay={fire:300,electric:200,water:350,dark:400};
+        const hitAnims={fire:"enemyFireHit 0.6s ease",electric:"enemyElecHit 0.6s ease",water:"enemyWaterHit 0.7s ease",grass:"enemyGrassHit 0.6s ease",dark:"enemyDarkHit 0.8s ease"};
+        const efxDelay={fire:300,electric:200,water:350,grass:280,dark:400};
         setTimeout(()=>{
           setPAnim("none");
           // Show move effect overlay
-          setAtkEffect(move.type);
+          setAtkEffect({type:move.type,idx:selIdx,lvl:mLvls[selIdx]});
           setTimeout(()=>{
             // Calculate damage with type effectiveness
             let dmg=didLvl?move.basePower+mLvls[selIdx]*2:getPow(selIdx);
@@ -340,7 +372,7 @@ function App(){
             const newHp=Math.max(0,eHp-dmg);setEHp(newHp);
             // Move-specific hit animation
             setEAnim(hitAnims[move.type]||"enemyHit 0.5s ease");
-            const dmgColor={fire:"#ef4444",electric:"#fbbf24",water:"#3b82f6",dark:"#a855f7"}[move.type]||"#ef4444";
+            const dmgColor={fire:"#ef4444",electric:"#fbbf24",water:"#3b82f6",grass:"#22c55e",dark:"#a855f7"}[move.type]||"#ef4444";
             addD(`-${dmg}`,140,55,dmgColor);
             setTimeout(()=>{setEAnim("");setAtkEffect(null);},800);
             if(newHp<=0){setTimeout(()=>{
@@ -500,11 +532,12 @@ function App(){
       {parts.map(p=><Part key={p.id} emoji={p.emoji} x={p.x} y={p.y} onDone={()=>rmP(p.id)}/>)}
       {mLvlUp!==null&&starter&&<div style={{position:"absolute",top:60,left:"50%",transform:"translateX(-50%)",background:"linear-gradient(135deg,rgba(251,191,36,0.9),rgba(245,158,11,0.9))",color:"white",padding:"6px 18px",borderRadius:20,fontSize:13,fontWeight:700,zIndex:200,animation:"popIn 0.3s ease",boxShadow:"0 4px 16px rgba(245,158,11,0.4)",whiteSpace:"nowrap"}}>{starter.moves[mLvlUp].icon} {starter.moves[mLvlUp].name} 升級到 Lv.{mLvls[mLvlUp]}！威力 → {getPow(mLvlUp)}</div>}
 
-      {/* Move-specific attack effects */}
-      {atkEffect==="fire"&&<FireEffect onDone={()=>setAtkEffect(null)}/>}
-      {atkEffect==="electric"&&<ElecEffect onDone={()=>setAtkEffect(null)}/>}
-      {atkEffect==="water"&&<WaterEffect onDone={()=>setAtkEffect(null)}/>}
-      {atkEffect==="dark"&&<DarkEffect onDone={()=>setAtkEffect(null)}/>}
+      {/* Move-specific attack effects — idx=move slot, lvl=move level */}
+      {atkEffect&&atkEffect.type==="fire"&&<FireEffect idx={atkEffect.idx} lvl={atkEffect.lvl} onDone={()=>setAtkEffect(null)}/>}
+      {atkEffect&&atkEffect.type==="electric"&&<ElecEffect idx={atkEffect.idx} lvl={atkEffect.lvl} onDone={()=>setAtkEffect(null)}/>}
+      {atkEffect&&atkEffect.type==="water"&&<WaterEffect idx={atkEffect.idx} lvl={atkEffect.lvl} onDone={()=>setAtkEffect(null)}/>}
+      {atkEffect&&atkEffect.type==="grass"&&<GrassEffect idx={atkEffect.idx} lvl={atkEffect.lvl} onDone={()=>setAtkEffect(null)}/>}
+      {atkEffect&&atkEffect.type==="dark"&&<DarkEffect idx={atkEffect.idx} lvl={atkEffect.lvl} onDone={()=>setAtkEffect(null)}/>}
 
       {/* Type effectiveness popup */}
       {effMsg&&<div style={{position:"absolute",top:"38%",left:"50%",transform:"translateX(-50%)",background:effMsg.color==="#22c55e"?"linear-gradient(135deg,rgba(34,197,94,0.95),rgba(22,163,74,0.95))":"linear-gradient(135deg,rgba(100,116,139,0.9),rgba(71,85,105,0.9))",color:"white",padding:"6px 20px",borderRadius:20,fontSize:14,fontWeight:800,zIndex:200,animation:"popIn 0.3s ease",boxShadow:`0 4px 16px ${effMsg.color}44`,letterSpacing:1}}>{effMsg.text}</div>}
