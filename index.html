@@ -230,6 +230,8 @@ function App(){
   const[atkEffect,setAtkEffect]=useState(null);
   const[effMsg,setEffMsg]=useState(null); // {text,color} for type effectiveness popup
   const[lastRank,setLastRank]=useState(-1);const scoreSaved=useRef(false);
+  const[playerName,setPlayerName]=useState(()=>{try{return localStorage.getItem("mathMonsterBattle_name")||"";}catch(e){return"";}});
+  const[nameSaved,setNameSaved]=useState(false);
   const did=useRef(0);const pid=useRef(0);
   const expNext=pLvl*30;
   const getPow=(i)=>Math.min(MOVES_BASE[i].basePower+(mLvls[i]-1)*2,POWER_CAPS[i]);
@@ -241,9 +243,9 @@ function App(){
   const SCENE_NAMES={grass:"🌿 綠意草原",fire:"🌋 炎熱火山",ghost:"🌙 幽暗墓地",steel:"⚙️ 鋼鐵要塞",dark:"💀 暗黑深淵"};
   const startBattle=(idx)=>{const e=enemies[idx];setEnemy(e);setEHp(e.maxHp);setRound(idx);const sn=SCENE_NAMES[e.mType]||"";setPhase("text");setBText(`【${sn}】野生的 ${e.name} Lv.${e.lvl} 出現了！`);setScreen("battle");setEAnim("slideInBattle 0.6s ease");setPAnim("slideInPlayer 0.6s ease");setTimeout(()=>{setEAnim("");setPAnim("");},700);};
   const quitGame=()=>{clearTimer();setScreen("gameover");};
-  // Auto-save score when entering gameover (uses latest rendered state values)
-  useEffect(()=>{if(screen==="gameover"&&!scoreSaved.current){scoreSaved.current=true;const comp=defeated>=enemies.length;const acc=(tC+tW>0)?Math.round(tC/(tC+tW)*100):0;const sc=calcScore(defeated,tC,tW,pLvl,timedMode);const entry={score:sc,defeated,correct:tC,wrong:tW,accuracy:acc,level:pLvl,timed:timedMode,completed:comp,date:new Date().toISOString()};const rank=saveScore(entry);setLastRank(rank);}},[screen]);
-  const startGame=()=>{clearTimer();scoreSaved.current=false;setLastRank(-1);setPHp(100);setPExp(0);setPLvl(1);setPStg(0);setStreak(0);setCharge(0);setTC(0);setTW(0);setDefeated(0);setMHits([0,0,0,0]);setMLvls([1,1,1,1]);setMLvlUp(null);setDmgs([]);setParts([]);setAtkEffect(null);setEffMsg(null);startBattle(0);};
+  // Save score when player submits name (arcade-style)
+  const handleSaveScore=()=>{if(scoreSaved.current)return;scoreSaved.current=true;const comp=defeated>=enemies.length;const acc=(tC+tW>0)?Math.round(tC/(tC+tW)*100):0;const sc=calcScore(defeated,tC,tW,pLvl,timedMode);const nm=playerName.trim()||"???";try{localStorage.setItem("mathMonsterBattle_name",nm);}catch(e){}const entry={score:sc,name:nm,defeated,correct:tC,wrong:tW,accuracy:acc,level:pLvl,timed:timedMode,completed:comp,date:new Date().toISOString()};const rank=saveScore(entry);setLastRank(rank);setNameSaved(true);};
+  const startGame=()=>{clearTimer();scoreSaved.current=false;setLastRank(-1);setNameSaved(false);setPHp(100);setPExp(0);setPLvl(1);setPStg(0);setStreak(0);setCharge(0);setTC(0);setTW(0);setDefeated(0);setMHits([0,0,0,0]);setMLvls([1,1,1,1]);setMLvlUp(null);setDmgs([]);setParts([]);setAtkEffect(null);setEffMsg(null);startBattle(0);};
 
   const onTimeoutRef=useRef(null);
   const clearTimer=()=>{if(timerRef.current){clearInterval(timerRef.current);timerRef.current=null;}};
@@ -356,6 +358,7 @@ function App(){
         return<div key={i} style={{display:"flex",alignItems:"center",gap:10,background:i===0?"rgba(251,191,36,0.12)":i===1?"rgba(192,192,192,0.08)":i===2?"rgba(205,127,50,0.08)":"rgba(255,255,255,0.04)",borderRadius:12,padding:"10px 14px",marginBottom:6,border:`1px solid ${i===0?"rgba(251,191,36,0.25)":i<3?"rgba(255,255,255,0.1)":"rgba(255,255,255,0.05)"}`,animation:`fadeSlide 0.3s ease ${i*0.05}s both`}}>
           <div style={{width:28,fontSize:i<3?20:14,textAlign:"center",fontWeight:900,color:i===0?"#fbbf24":i===1?"#c0c0c0":i===2?"#cd7f32":"rgba(255,255,255,0.4)"}}>{i<3?["🥇","🥈","🥉"][i]:`${i+1}`}</div>
           <div style={{flex:1,minWidth:0}}>
+            <div style={{fontSize:11,fontWeight:700,color:"rgba(255,255,255,0.85)",marginBottom:1}}>{s.name||"???"}</div>
             <div style={{display:"flex",alignItems:"center",gap:6}}>
               <span style={{fontSize:18,fontWeight:900,color:"#fbbf24",fontFamily:"'Press Start 2P',monospace"}}>{s.score}</span>
               {s.timed&&<span style={{fontSize:9,background:"rgba(239,68,68,0.3)",padding:"1px 6px",borderRadius:8,fontWeight:700}}>⏱️</span>}
@@ -391,6 +394,7 @@ function App(){
         {lastRank>=0&&lastRank<3&&<div style={{fontSize:12,color:"#fbbf24",fontWeight:700,marginTop:2,animation:"popIn 0.3s ease 0.5s both"}}>{["🥇 新紀錄！第1名！","🥈 第2名！","🥉 第3名！"][lastRank]}</div>}
         {lastRank>=3&&<div style={{fontSize:12,opacity:0.5,marginTop:2}}>排行榜第 {lastRank+1} 名</div>}
       </div>
+      {!nameSaved?<div style={{marginBottom:12,animation:"popIn 0.3s ease 0.4s both"}}><div style={{fontSize:13,opacity:0.5,marginBottom:6}}>輸入你的名字</div><div style={{display:"flex",gap:8,justifyContent:"center",alignItems:"center"}}><input value={playerName} onChange={e=>setPlayerName(e.target.value)} placeholder="???" maxLength={8} style={{background:"rgba(255,255,255,0.1)",border:"1px solid rgba(255,255,255,0.2)",borderRadius:10,color:"white",fontSize:16,fontWeight:700,padding:"8px 12px",textAlign:"center",width:140,outline:"none"}} onKeyDown={e=>{if(e.key==="Enter")handleSaveScore();}}/><button onClick={handleSaveScore} style={{background:"linear-gradient(135deg,#22c55e,#16a34a)",border:"none",color:"white",fontSize:14,fontWeight:700,padding:"10px 20px",borderRadius:50}}>儲存</button></div></div>:<div style={{marginBottom:12,fontSize:12,color:"#22c55e",fontWeight:700,animation:"popIn 0.3s ease"}}>✅ 已儲存！</div>}
       <div style={{background:"rgba(255,255,255,0.08)",borderRadius:16,padding:20,marginBottom:12,minWidth:260,border:"1px solid rgba(255,255,255,0.1)"}}>
         <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,fontSize:14}}>
           <div style={{textAlign:"center"}}><div style={{fontSize:28,fontWeight:900,color:"#22c55e"}}>{tC}</div><div style={{opacity:0.5,fontSize:12}}>答對</div></div>
