@@ -433,7 +433,6 @@ function App(){
 
       <div style={{flex:1,position:"relative",minHeight:0,background:"#111",transition:"background 1s ease"}}>{scene.bgImg&&<div className="scene-bg" style={{backgroundImage:`url(${scene.bgImg})`}}/>}<div style={{position:"absolute",inset:0,background:scene.sky,opacity:0.25,zIndex:1,transition:"background 1s ease"}}/>
         <div style={{position:"absolute",bottom:0,left:0,right:0,height:"45%",background:scene.ground,transition:"background 1s ease",zIndex:2}}/>
-        <div style={{position:"absolute",inset:0,zIndex:3}}>{scene.deco()}</div>
         <div style={{position:"absolute",right:"5%",top:"8%",width:"55%",height:12,background:scene.platform2,borderRadius:"50%",filter:"blur(2px)",transition:"background 0.8s ease",zIndex:3}}/>
         <div style={{position:"absolute",top:10,left:10,right:"42%",zIndex:10}}>
           <HPBar cur={eHp} max={enemy.maxHp} color={enemy.c1} label={`${enemy.typeIcon}${enemy.name} Lv.${enemy.lvl}`}/>
