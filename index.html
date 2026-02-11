@@ -291,21 +291,23 @@ function GrassEffect({idx=0,lvl=1,onDone}){
 function TBox({text,onClick}){return<div onClick={onClick} style={{position:"absolute",bottom:0,left:0,right:0,background:"linear-gradient(to top,rgba(15,23,42,0.98),rgba(15,23,42,0.92))",borderTop:"3px solid rgba(255,255,255,0.15)",padding:"16px 20px",minHeight:70,display:"flex",alignItems:"center",justifyContent:"space-between",cursor:"pointer",zIndex:50}}><div style={{fontSize:18,fontWeight:600,color:"white",lineHeight:1.6,animation:"fadeSlide 0.3s ease"}}>{text}</div><div style={{fontSize:12,color:"rgba(255,255,255,0.3)",flexShrink:0,marginLeft:12}}>▼</div></div>;}
 
 function GameShell(){
-  const DW=390,DH=700;
-  const{useState:uS,useEffect:uE,useCallback:uC}=React;
-  const[dims,setDims]=uS(()=>{const vw=window.innerWidth,vh=window.innerHeight;if(vw>vh*1.05){const s=Math.min(vw/DW,vh/DH);return{w:DW,h:DH,s,ls:true};}return{w:vw,h:vh,s:1,ls:false};});
+  const{useState:uS,useEffect:uE}=React;
+  const[isLs,setIsLs]=uS(()=>window.innerWidth>window.innerHeight*1.05);
   uE(()=>{
-    const calc=()=>{const vw=window.innerWidth,vh=window.innerHeight;if(vw>vh*1.05){const s=Math.min(vw/DW,vh/DH);setDims({w:DW,h:DH,s,ls:true});}else{setDims({w:vw,h:vh,s:1,ls:false});}};
-    window.addEventListener("resize",calc);
-    window.addEventListener("orientationchange",()=>setTimeout(calc,350));
-    if(window.screen&&window.screen.orientation)window.screen.orientation.addEventListener("change",()=>setTimeout(calc,350));
-    return()=>{window.removeEventListener("resize",calc);window.removeEventListener("orientationchange",calc);if(window.screen&&window.screen.orientation)window.screen.orientation.removeEventListener("change",calc);};
+    try{screen.orientation.lock("portrait-primary").catch(()=>{});}catch(e){}
+    const chk=()=>setIsLs(window.innerWidth>window.innerHeight*1.05);
+    window.addEventListener("resize",chk);
+    window.addEventListener("orientationchange",()=>setTimeout(chk,350));
+    return()=>{window.removeEventListener("resize",chk);window.removeEventListener("orientationchange",chk);};
   },[]);
-  return React.createElement("div",{style:{position:"fixed",inset:0,background:"#000",display:"flex",alignItems:"center",justifyContent:"center",overflow:"hidden"}},
-    React.createElement("div",{style:{width:dims.w,height:dims.h,transform:dims.s!==1?"scale("+dims.s+")":"none",transformOrigin:"center center",overflow:"hidden",borderRadius:dims.ls?12:0,boxShadow:dims.ls?"0 0 40px rgba(0,0,0,0.8)":"none"}},
-      React.createElement(App,null)
-    )
-  );
+  return <div style={{position:"fixed",inset:0,overflow:"hidden",background:"#000"}}>
+    <App/>
+    {isLs&&<div style={{position:"fixed",inset:0,background:"linear-gradient(180deg,#0f172a,#1e1b4b,#312e81)",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",color:"white",zIndex:9999}}>
+      <div style={{fontSize:56,marginBottom:20,animation:"float 3s ease-in-out infinite"}}>📱</div>
+      <div style={{fontSize:20,fontWeight:800,marginBottom:8}}>請將手機轉為直立方向</div>
+      <div style={{fontSize:13,opacity:0.5}}>本遊戲僅支援直向模式</div>
+    </div>}
+  </div>;
 }
 
 function App(){
