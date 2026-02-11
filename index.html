@@ -30,6 +30,8 @@ button:active{transform:scale(0.96)!important}
 @keyframes slideInBattle{0%{transform:translateX(120px);opacity:0}100%{transform:translateX(0);opacity:1}}
 @keyframes slideInPlayer{0%{transform:translateX(-120px) scaleX(-1);opacity:0}100%{transform:translateX(0) scaleX(-1);opacity:1}}
 @keyframes sparkle{0%{transform:scale(0) rotate(0deg);opacity:1}50%{transform:scale(1) rotate(180deg);opacity:1}100%{transform:scale(0) rotate(360deg);opacity:0}}
+@keyframes emberRise{0%{transform:translateY(0) scale(1);opacity:0.6}40%{opacity:0.9}100%{transform:translateY(-110px) scale(0.2);opacity:0}}
+@keyframes lavaGlow{0%,100%{opacity:0.18;transform:scale(1)}50%{opacity:0.35;transform:scale(1.15)}}
 @keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
 @keyframes floatFlip{0%,100%{transform:translateY(0) scaleX(-1)}50%{transform:translateY(-8px) scaleX(-1)}}
 @keyframes shadowPulse{0%,100%{transform:scaleX(1) scaleY(1);opacity:0.55}50%{transform:scaleX(0.85) scaleY(0.85);opacity:0.3}}
@@ -134,8 +136,7 @@ const SCENES={
     sky:"linear-gradient(180deg,#7c2d12 0%,#c2410c 25%,#ea580c 50%,#92400e 80%,#451a03 100%)",
     ground:"linear-gradient(180deg,transparent,rgba(234,88,12,0.1) 40%,rgba(154,52,18,0.25))",
     platform1:"rgba(234,88,12,0.3)",platform2:"rgba(234,88,12,0.2)",
-    deco:()=><>{[...Array(4)].map((_,i)=><div key={`f${i}`} style={{position:"absolute",bottom:`${5+i*4}%`,left:`${10+i*22}%`,fontSize:12+Math.random()*10,opacity:0.2+Math.random()*0.15,animation:`sparkle ${2+i*0.5}s ease ${i*0.3}s infinite`}}>{"🔥🌋🔥💨"[i]}</div>)}<div style={{position:"absolute",top:"8%",left:"15%",width:60,height:60,background:"radial-gradient(circle,rgba(251,146,60,0.15),transparent)",borderRadius:"50%"}}/>
-    <div style={{position:"absolute",bottom:"15%",right:"5%",width:40,height:50,opacity:0.12}}><svg viewBox="0 0 40 50"><polygon points="10,50 20,10 30,50" fill="#ef4444" opacity="0.5"/><polygon points="5,50 15,20 25,50" fill="#b91c1c" opacity="0.3"/></svg></div></>
+    deco:()=><>{/* Rising ember particles */}{[...Array(8)].map((_,i)=><div key={`e${i}`} style={{position:"absolute",bottom:`${2+i*3}%`,left:`${6+i*11}%`,width:3+i%3*2,height:3+i%3*2,background:["#f97316","#ef4444","#fbbf24","#dc2626","#fb923c","#f59e0b","#ea580c","#fcd34d"][i],borderRadius:"50%",animation:`emberRise ${2.5+i*0.6}s ease-in ${i*0.35}s infinite`}}/>)}{/* Floating fire emojis */}{[...Array(4)].map((_,i)=><div key={`f${i}`} style={{position:"absolute",bottom:`${6+i*5}%`,left:`${8+i*22}%`,fontSize:14+i*2,opacity:0.35,animation:`float ${2.5+i*0.5}s ease-in-out ${i*0.3}s infinite`}}>{"🔥🌋🔥💨"[i]}</div>)}{/* Animated lava glow */}<div style={{position:"absolute",bottom:"0%",left:"8%",width:120,height:35,background:"radial-gradient(ellipse,rgba(234,88,12,0.25),transparent)",borderRadius:"50%",animation:"lavaGlow 3s ease-in-out infinite"}}/><div style={{position:"absolute",bottom:"3%",right:"12%",width:90,height:30,background:"radial-gradient(ellipse,rgba(220,38,38,0.2),transparent)",borderRadius:"50%",animation:"lavaGlow 3.5s ease-in-out 0.8s infinite"}}/>{/* Heat shimmer at top */}<div style={{position:"absolute",top:"0%",left:"0%",width:"100%",height:"25%",background:"linear-gradient(180deg,rgba(251,146,60,0.06),transparent)",animation:"float 5s ease-in-out infinite"}}/></>
   },
   ghost:{
     bgImg:BG_IMGS.ghost,
