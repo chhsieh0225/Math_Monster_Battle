@@ -14,7 +14,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.9/babel.min.js"></script>
 <style>
 *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-body{font-family:'Noto Sans TC',sans-serif;overflow:hidden;height:100vh;height:100dvh;background:#111;-webkit-user-select:none;user-select:none}
+body{font-family:'Noto Sans TC',sans-serif;overflow:hidden;height:100vh;height:100dvh;background:#000;-webkit-user-select:none;user-select:none}
 button{font-family:inherit;cursor:pointer;-webkit-tap-highlight-color:transparent}
 button:active{transform:scale(0.96)!important}
 .scene-bg{position:absolute;inset:0;background-size:cover;background-position:center;image-rendering:auto;z-index:0;}
@@ -290,6 +290,24 @@ function GrassEffect({idx=0,lvl=1,onDone}){
 
 function TBox({text,onClick}){return<div onClick={onClick} style={{position:"absolute",bottom:0,left:0,right:0,background:"linear-gradient(to top,rgba(15,23,42,0.98),rgba(15,23,42,0.92))",borderTop:"3px solid rgba(255,255,255,0.15)",padding:"16px 20px",minHeight:70,display:"flex",alignItems:"center",justifyContent:"space-between",cursor:"pointer",zIndex:50}}><div style={{fontSize:18,fontWeight:600,color:"white",lineHeight:1.6,animation:"fadeSlide 0.3s ease"}}>{text}</div><div style={{fontSize:12,color:"rgba(255,255,255,0.3)",flexShrink:0,marginLeft:12}}>▼</div></div>;}
 
+function GameShell(){
+  const DW=390,DH=700;
+  const{useState:uS,useEffect:uE,useCallback:uC}=React;
+  const[dims,setDims]=uS(()=>{const vw=window.innerWidth,vh=window.innerHeight;if(vw>vh*1.05){const s=Math.min(vw/DW,vh/DH);return{w:DW,h:DH,s,ls:true};}return{w:vw,h:vh,s:1,ls:false};});
+  uE(()=>{
+    const calc=()=>{const vw=window.innerWidth,vh=window.innerHeight;if(vw>vh*1.05){const s=Math.min(vw/DW,vh/DH);setDims({w:DW,h:DH,s,ls:true});}else{setDims({w:vw,h:vh,s:1,ls:false});}};
+    window.addEventListener("resize",calc);
+    window.addEventListener("orientationchange",()=>setTimeout(calc,350));
+    if(window.screen&&window.screen.orientation)window.screen.orientation.addEventListener("change",()=>setTimeout(calc,350));
+    return()=>{window.removeEventListener("resize",calc);window.removeEventListener("orientationchange",calc);if(window.screen&&window.screen.orientation)window.screen.orientation.removeEventListener("change",calc);};
+  },[]);
+  return React.createElement("div",{style:{position:"fixed",inset:0,background:"#000",display:"flex",alignItems:"center",justifyContent:"center",overflow:"hidden"}},
+    React.createElement("div",{style:{width:dims.w,height:dims.h,transform:dims.s!==1?"scale("+dims.s+")":"none",transformOrigin:"center center",overflow:"hidden",borderRadius:dims.ls?12:0,boxShadow:dims.ls?"0 0 40px rgba(0,0,0,0.8)":"none"}},
+      React.createElement(App,null)
+    )
+  );
+}
+
 function App(){
   const[screen,setScreen]=useState("title");const[round,setRound]=useState(0);
   const[timedMode,setTimedMode]=useState(false);
@@ -428,7 +446,7 @@ function App(){
   const advance=()=>{if(phase==="text"){setPhase("menu");setBText("");}else if(phase==="victory"){const nx=round+1;if(nx>=enemies.length){setScreen("gameover");}else{setPHp(h=>Math.min(h+10,pMax));startBattle(nx);}}};
 
   if(screen==="title")return(
-    <div style={{height:"100dvh",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",background:"linear-gradient(180deg,#0f172a 0%,#1e1b4b 40%,#312e81 100%)",color:"white",padding:24,textAlign:"center",position:"relative",overflow:"hidden"}}>
+    <div style={{height:"100%",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",background:"linear-gradient(180deg,#0f172a 0%,#1e1b4b 40%,#312e81 100%)",color:"white",padding:24,textAlign:"center",position:"relative",overflow:"hidden"}}>
       <div style={{position:"absolute",top:"8%",left:"12%",fontSize:40,opacity:0.12,animation:"sparkle 3s ease infinite"}}>⭐</div>
       <div style={{position:"absolute",top:"18%",right:"18%",fontSize:30,opacity:0.08,animation:"sparkle 4s ease 1s infinite"}}>✨</div>
       <div style={{display:"flex",gap:12,marginBottom:16,alignItems:"flex-end"}}>{STARTERS.map((s,i)=><div key={s.id} style={{animation:`float ${3+i*0.4}s ease-in-out ${i*0.3}s infinite`}}><MSVG svgStr={s.stages[0].svgFn(s.c1,s.c2)} size={i===1?110:95}/></div>)}</div>
@@ -447,7 +465,7 @@ function App(){
   );
 
   if(screen==="leaderboard"){const scores=loadScores();return(
-    <div style={{height:"100dvh",display:"flex",flexDirection:"column",alignItems:"center",background:"linear-gradient(180deg,#0f172a 0%,#1e1b4b 40%,#312e81 100%)",color:"white",padding:24,overflow:"auto"}}>
+    <div style={{height:"100%",display:"flex",flexDirection:"column",alignItems:"center",background:"linear-gradient(180deg,#0f172a 0%,#1e1b4b 40%,#312e81 100%)",color:"white",padding:24,overflow:"auto"}}>
       <div style={{fontSize:36,marginBottom:4,marginTop:16}}>🏆</div>
       <h2 style={{fontSize:22,fontWeight:900,marginBottom:16,letterSpacing:1}}>排行榜</h2>
       {scores.length===0?<div style={{opacity:0.4,fontSize:14,marginTop:40}}>尚無紀錄，快去挑戰吧！</div>:
@@ -472,7 +490,7 @@ function App(){
   );}
 
   if(screen==="selection")return(
-    <div style={{minHeight:"100vh",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",background:"linear-gradient(135deg,#0f172a 0%,#1e293b 50%,#0f172a 100%)",padding:20}}>
+    <div style={{minHeight:"100%",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",background:"linear-gradient(135deg,#0f172a 0%,#1e293b 50%,#0f172a 100%)",padding:20}}>
       <h2 style={{color:"white",fontSize:22,marginBottom:8,textShadow:"0 2px 8px rgba(0,0,0,0.5)"}}>選擇你的夥伴！</h2>
       <p style={{color:"#94a3b8",fontSize:14,marginBottom:24}}>每種屬性對應不同的數學技能</p>
       <div style={{display:"flex",gap:16,flexWrap:"wrap",justifyContent:"center"}}>
@@ -492,7 +510,7 @@ function App(){
   );
 
   if(screen==="evolve"){const st=starter&&starter.stages[pStg];const ECOLORS=["#818cf8","#a855f7","#fbbf24","#22c55e","#60a5fa","#f472b6","#fb923c","#34d399","#c084fc","#facc15"];return(
-    <div style={{height:"100dvh",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",background:"linear-gradient(270deg,#0f0520,#1e1b4b,#312e81,#1e1b4b,#0f0520)",backgroundSize:"400% 400%",animation:"bgShimmer 6s ease infinite",color:"white",padding:24,textAlign:"center",position:"relative",overflow:"hidden"}}>
+    <div style={{height:"100%",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",background:"linear-gradient(270deg,#0f0520,#1e1b4b,#312e81,#1e1b4b,#0f0520)",backgroundSize:"400% 400%",animation:"bgShimmer 6s ease infinite",color:"white",padding:24,textAlign:"center",position:"relative",overflow:"hidden"}}>
       <div style={{position:"absolute",inset:0,background:"white",animation:"evolveFlash 1.8s ease forwards",zIndex:100,pointerEvents:"none"}}/>
       {[0,0.3,0.6].map((dl,i)=><div key={"br"+i} style={{position:"absolute",left:"50%",top:"42%",width:60,height:60,marginLeft:-30,marginTop:-30,borderRadius:"50%",border:"3px solid",borderColor:["rgba(99,102,241,0.6)","rgba(168,85,247,0.5)","rgba(251,191,36,0.4)"][i],animation:`colorBurst 1.8s ease ${dl}s forwards`,pointerEvents:"none"}}/>)}
       {Array.from({length:12},(_,i)=><div key={"op"+i} style={{position:"absolute",left:"50%",top:"42%",width:0,height:0,animation:`evolveSpin ${2.2+i*0.25}s linear ${i*0.12}s infinite`,zIndex:50,"--orbit":`${45+i*7}px`}}><div style={{width:4+i%3*2,height:4+i%3*2,borderRadius:"50%",background:ECOLORS[i%10],boxShadow:`0 0 ${6+i*2}px ${ECOLORS[i%10]}`,opacity:0.85}}/></div>)}
@@ -509,7 +527,7 @@ function App(){
   );}
 
   if(screen==="gameover"){const won=defeated>=enemies.length;const finalScore=calcScore(defeated,tC,tW,pLvl,timedMode);return(
-    <div style={{height:"100dvh",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",background:won?"linear-gradient(180deg,#1e1b4b,#312e81,#4338ca)":"linear-gradient(180deg,#1e1b4b,#1a0a2e,#0f0520)",color:"white",padding:24,textAlign:"center"}}>
+    <div style={{height:"100%",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",background:won?"linear-gradient(180deg,#1e1b4b,#312e81,#4338ca)":"linear-gradient(180deg,#1e1b4b,#1a0a2e,#0f0520)",color:"white",padding:24,textAlign:"center"}}>
       <div style={{fontSize:64,marginBottom:8,animation:"popIn 0.5s ease"}}>{won?"🏆":"💀"}</div>
       <h2 style={{fontSize:26,fontWeight:900,marginBottom:4}}>{won?"恭喜通關！":"挑戰結束"}{timedMode&&<span style={{fontSize:13,fontWeight:700,background:"rgba(239,68,68,0.3)",padding:"2px 10px",borderRadius:12,marginLeft:8,verticalAlign:"middle"}}>⏱️ 計時</span>}</h2>
       <div style={{marginBottom:12,animation:"popIn 0.4s ease 0.2s both"}}>
@@ -545,7 +563,7 @@ function App(){
   const scene=SCENES[enemy.mType]||SCENES.grass;
 
   return(
-    <div style={{height:"100dvh",display:"flex",flexDirection:"column",position:"relative",overflow:"hidden"}}>
+    <div style={{height:"100%",display:"flex",flexDirection:"column",position:"relative",overflow:"hidden"}}>
       {dmgs.map(d=><Dmg key={d.id} value={d.value} x={d.x} y={d.y} color={d.color} onDone={()=>rmD(d.id)}/>)}
       {parts.map(p=><Part key={p.id} emoji={p.emoji} x={p.x} y={p.y} onDone={()=>rmP(p.id)}/>)}
       {mLvlUp!==null&&starter&&<div style={{position:"absolute",top:60,left:"50%",transform:"translateX(-50%)",background:"linear-gradient(135deg,rgba(251,191,36,0.9),rgba(245,158,11,0.9))",color:"white",padding:"6px 18px",borderRadius:20,fontSize:13,fontWeight:700,zIndex:200,animation:"popIn 0.3s ease",boxShadow:"0 4px 16px rgba(245,158,11,0.4)",whiteSpace:"nowrap"}}>{starter.moves[mLvlUp].icon} {starter.moves[mLvlUp].name} 升級到 Lv.{mLvls[mLvlUp]}！威力 → {getPow(mLvlUp)}</div>}
@@ -570,8 +588,8 @@ function App(){
             {frozen&&<div style={{background:"rgba(56,189,248,0.85)",color:"white",padding:"2px 8px",borderRadius:8,fontSize:11,fontWeight:700,animation:"popIn 0.3s ease"}}>❄️凍結</div>}
           </div>
         </div>
-        <div style={{position:"absolute",right:"10%",top:enemy&&(enemy.mType==="ghost"||enemy.id==="boss")?"12%":enemy&&enemy.mType==="steel"?"16%":"26%",zIndex:5,animation:eAnim||(enemy&&enemy.id==="boss"?"bossFloat 2.5s ease-in-out infinite, bossPulse 4s ease infinite":"float 3s ease-in-out infinite")}}><MSVG svgStr={eSvg} size={enemy&&enemy.id==="boss"?230:enemy.id==="fire"||enemy.id==="dragon"?180:enemy.isEvolved?155:120}/></div>
-        {!eAnim&&<div style={{position:"absolute",right:enemy&&enemy.id==="boss"?"12%":"14%",top:enemy&&enemy.id==="boss"?"52%":enemy&&enemy.mType==="ghost"?"40%":enemy&&enemy.mType==="steel"?"46%":"54%",width:enemy&&enemy.id==="boss"?120:enemy&&(enemy.id==="fire"||enemy.id==="dragon")?100:80,height:12,background:"radial-gradient(ellipse,rgba(0,0,0,0.6),transparent)",borderRadius:"50%",zIndex:4,animation:"shadowPulse 3s ease-in-out infinite"}}/>}
+        <div style={{position:"absolute",right:"10%",top:enemy&&(enemy.mType==="ghost"||enemy.id==="boss")?"12%":enemy&&enemy.mType==="steel"?"16%":"26%",zIndex:5,animation:eAnim||(enemy&&enemy.id==="boss"?"bossFloat 2.5s ease-in-out infinite, bossPulse 4s ease infinite":"float 3s ease-in-out infinite")}}><MSVG svgStr={eSvg} size={enemy&&enemy.id==="boss"?230:enemy.id==="fire"||enemy.id==="dragon"||(enemy.id==="slime"&&enemy.isEvolved)?180:enemy.isEvolved?155:120}/></div>
+        {!eAnim&&<div style={{position:"absolute",right:enemy&&enemy.id==="boss"?"12%":"14%",top:enemy&&enemy.id==="boss"?"52%":enemy&&enemy.mType==="ghost"?"40%":enemy&&enemy.mType==="steel"?"46%":"54%",width:enemy&&enemy.id==="boss"?120:enemy&&(enemy.id==="fire"||enemy.id==="dragon"||(enemy.id==="slime"&&enemy.isEvolved))?100:80,height:12,background:"radial-gradient(ellipse,rgba(0,0,0,0.6),transparent)",borderRadius:"50%",zIndex:4,animation:"shadowPulse 3s ease-in-out infinite"}}/>}
         <div style={{position:"absolute",left:"2%",bottom:"12%",width:"50%",height:10,background:scene.platform1,borderRadius:"50%",filter:"blur(2px)",transition:"background 0.8s ease",zIndex:3}}/>
         <div style={{position:"absolute",bottom:10,right:10,left:"42%",zIndex:10}}><HPBar cur={pHp} max={pMax} color="#6366f1" label={`${st.name} Lv.${pLvl}`}/><XPBar exp={pExp} max={expNext}/></div>
         <div style={{position:"absolute",left:"6%",bottom:"14%",transform:"scaleX(-1)",zIndex:5,animation:pAnim||"floatFlip 3s ease-in-out infinite"}}><MSVG svgStr={pSvg} size={pStg>=2?200:pStg>=1?170:155}/></div>
@@ -616,7 +634,7 @@ function App(){
     </div>
   );
 }
-ReactDOM.createRoot(document.getElementById("root")).render(<App/>);
+ReactDOM.createRoot(document.getElementById("root")).render(<GameShell/>);
 </script>
 <script>if('serviceWorker' in navigator){navigator.serviceWorker.register('sw.js');}</script>
 </body>
