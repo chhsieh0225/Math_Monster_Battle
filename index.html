@@ -32,7 +32,7 @@ button:active{transform:scale(0.96)!important}
 @keyframes sparkle{0%{transform:scale(0) rotate(0deg);opacity:1}50%{transform:scale(1) rotate(180deg);opacity:1}100%{transform:scale(0) rotate(360deg);opacity:0}}
 @keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
 @keyframes floatFlip{0%,100%{transform:translateY(0) scaleX(-1)}50%{transform:translateY(-8px) scaleX(-1)}}
-@keyframes shadowPulse{0%,100%{transform:scaleX(1) scaleY(1);opacity:0.35}50%{transform:scaleX(0.85) scaleY(0.85);opacity:0.2}}
+@keyframes shadowPulse{0%,100%{transform:scaleX(1) scaleY(1);opacity:0.55}50%{transform:scaleX(0.85) scaleY(0.85);opacity:0.3}}
 @keyframes timerShrink{0%{width:100%}100%{width:0%}}
 @keyframes timerPulse{0%{opacity:1}50%{opacity:0.5}100%{opacity:1}}
 @keyframes timerUrgent{0%{background:#ef4444}50%{background:#fbbf24}100%{background:#ef4444}}
@@ -569,12 +569,12 @@ function App(){
             {frozen&&<div style={{background:"rgba(56,189,248,0.85)",color:"white",padding:"2px 8px",borderRadius:8,fontSize:11,fontWeight:700,animation:"popIn 0.3s ease"}}>❄️凍結</div>}
           </div>
         </div>
-        <div style={{position:"absolute",right:"10%",top:"12%",zIndex:5,animation:eAnim||(enemy&&enemy.id==="boss"?"bossFloat 2.5s ease-in-out infinite, bossPulse 4s ease infinite":"float 3s ease-in-out infinite")}}><MSVG svgStr={eSvg} size={enemy&&enemy.id==="boss"?230:enemy.id==="fire"||enemy.id==="dragon"?180:enemy.isEvolved?155:120}/></div>
-        {!eAnim&&<div style={{position:"absolute",right:enemy&&enemy.id==="boss"?"12%":"14%",top:enemy&&enemy.id==="boss"?"52%":"42%",width:enemy&&enemy.id==="boss"?120:enemy&&(enemy.id==="fire"||enemy.id==="dragon")?100:80,height:12,background:"radial-gradient(ellipse,rgba(0,0,0,0.4),transparent)",borderRadius:"50%",zIndex:4,animation:"shadowPulse 3s ease-in-out infinite"}}/>}
+        <div style={{position:"absolute",right:"10%",top:enemy&&(enemy.mType==="ghost"||enemy.id==="boss")?"12%":enemy&&enemy.mType==="steel"?"16%":"26%",zIndex:5,animation:eAnim||(enemy&&enemy.id==="boss"?"bossFloat 2.5s ease-in-out infinite, bossPulse 4s ease infinite":"float 3s ease-in-out infinite")}}><MSVG svgStr={eSvg} size={enemy&&enemy.id==="boss"?230:enemy.id==="fire"||enemy.id==="dragon"?180:enemy.isEvolved?155:120}/></div>
+        {!eAnim&&<div style={{position:"absolute",right:enemy&&enemy.id==="boss"?"12%":"14%",top:enemy&&enemy.id==="boss"?"52%":enemy&&enemy.mType==="ghost"?"40%":enemy&&enemy.mType==="steel"?"46%":"54%",width:enemy&&enemy.id==="boss"?120:enemy&&(enemy.id==="fire"||enemy.id==="dragon")?100:80,height:12,background:"radial-gradient(ellipse,rgba(0,0,0,0.6),transparent)",borderRadius:"50%",zIndex:4,animation:"shadowPulse 3s ease-in-out infinite"}}/>}
         <div style={{position:"absolute",left:"2%",bottom:"12%",width:"50%",height:10,background:scene.platform1,borderRadius:"50%",filter:"blur(2px)",transition:"background 0.8s ease",zIndex:3}}/>
         <div style={{position:"absolute",bottom:10,right:10,left:"42%",zIndex:10}}><HPBar cur={pHp} max={pMax} color="#6366f1" label={`${st.name} Lv.${pLvl}`}/><XPBar exp={pExp} max={expNext}/></div>
         <div style={{position:"absolute",left:"6%",bottom:"14%",transform:"scaleX(-1)",zIndex:5,animation:pAnim||"floatFlip 3s ease-in-out infinite"}}><MSVG svgStr={pSvg} size={pStg>=2?200:pStg>=1?170:155}/></div>
-        {!pAnim&&<div style={{position:"absolute",left:"10%",bottom:"12%",width:pStg>=2?100:pStg>=1?85:70,height:10,background:"radial-gradient(ellipse,rgba(0,0,0,0.35),transparent)",borderRadius:"50%",zIndex:4,animation:"shadowPulse 3s ease-in-out infinite"}}/>}
+        {!pAnim&&<div style={{position:"absolute",left:"10%",bottom:"12%",width:pStg>=2?100:pStg>=1?85:70,height:10,background:"radial-gradient(ellipse,rgba(0,0,0,0.55),transparent)",borderRadius:"50%",zIndex:4,animation:"shadowPulse 3s ease-in-out infinite"}}/>}
         {streak>=2&&<div style={{position:"absolute",top:10,right:10,background:"linear-gradient(135deg,#f59e0b,#ef4444)",color:"white",padding:"3px 10px",borderRadius:16,fontSize:11,fontWeight:700,animation:"popIn 0.3s ease",zIndex:20}}>🔥 {streak} 連擊！</div>}
         {timedMode&&streak<2&&<div style={{position:"absolute",top:10,right:10,background:"rgba(239,68,68,0.7)",color:"white",padding:"3px 8px",borderRadius:12,fontSize:10,fontWeight:700,zIndex:20,backdropFilter:"blur(4px)"}}>⏱️ 計時</div>}
         <div style={{position:"absolute",bottom:50,left:10,display:"flex",gap:4,zIndex:20,background:"rgba(0,0,0,0.3)",padding:"3px 8px",borderRadius:10,backdropFilter:"blur(4px)"}}>
